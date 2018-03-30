@@ -18,7 +18,8 @@ class Setup
   def self.authorized_credentials
     FileUtils.mkdir_p(File.dirname(CREDENTIALS_PATH))
     client_id = Google::Auth::ClientId.from_file(CLIENT_SECRETS_PATH)
-    token_store = Google::Auth::Stores::FileTokenStore.new(file: CREDENTIALS_PATH)
+    token_store = Google::Auth::Stores::FileTokenStore.new(
+      file: CREDENTIALS_PATH)
     authorizer = Google::Auth::UserAuthorizer.new(
       client_id, SCOPE, token_store)
     user_id = 'default'
@@ -60,22 +61,46 @@ class UI
 
   def user_message(app)
     check_args
+    to_s = []
     subject = ""
-    if ARGV.count > 2 && ARGV[1] == '-s' then
-      subject = ARGV[2]
+    i = 0
+    while i < ARGV.count do
+      if ARGV[i] == '-s' then
+        i += 1
+        if i == ARGV.count then
+          puts usage; exit 43
+        else
+          subject = ARGV[i]
+        end
+      else
+        to_s << ARGV[i]
+      end
+      i += 1
     end
-    result = EmailMessage.new(ARGV[0], subject)
-    body = $stdin.read
-    if body && body.length > 0 then
-      result.body = body
+    if to_s.count == 0 then
+      puts "Missing 'to' address"
+      puts usage
+      exit 44
+    end
+    result = EmailMessage.new(to_s, subject)
+    if ! $stdin.tty? then
+      body = $stdin.read
+      if body && body.length > 0 then
+        result.body = body
+      end
+    else
+      # ($stdin is empty)
     end
     result
   end
 
   protected
 
+  def initialize
+  end
+
   def usage
-    "Usage: $0 [-s <subject>] <to-addr> ..."
+    "Usage: #{$0} [-s <subject>] <to-addr> ..."
   end
 
   def check_args
@@ -101,9 +126,6 @@ class EmailMessage
     #message.header['From'] = options[:from]
     message.header['Subject'] = subject
     message.body = body
-    puts "Here is the message:"
-    p message
-exit 0
     app.service.send_user_message(app.user_id,
                               upload_source: StringIO.new(message.to_s),
                               content_type: 'message/rfc822')
@@ -130,12 +152,11 @@ class App
   end
 end
 
-ui = UI.new
-app = App.new
-msg = ui.user_message(app)
-p msg
-puts "tos: #{msg.to_addrs}"
-puts "subj: #{msg.subject}"
-puts "body: #{msg.body}"
-msg.send(app)
-send_message(service, 'jim.cochrane@gmail.com', 'send test #4', 'This be a test.')
+def main
+  ui = UI.new
+  app = App.new
+  msg = ui.user_message(app)
+  msg.send(app)
+end
+
+main
