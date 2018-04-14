@@ -45,7 +45,7 @@ class Setup
 
   OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'
   APPLICATION_NAME = 'Gmail API: send email message'
-  CLIENT_SECRETS_PATH = 'client_secret.json'
+  CLIENT_SECRETS_PATH = ENV["HOME"] + '/.config/gmail-api/client_secret.json'
   CREDENTIALS_PATH = File.join(Dir.home, '.credentials',
                                "gmail-ruby-quickstart.yaml")
   SCOPE = [
